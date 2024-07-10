@@ -1,6 +1,7 @@
 import vec_2d as v
 import draw as d
 import world as w
+from math import atan , tan , degrees , radians
 
 class car:
     def __init__(self,length=1) -> None:
@@ -103,7 +104,7 @@ class car:
                 tire.append(c)
 
         # other wheels
-        distance = 0.9
+        distance = 0.9 # moving wheels in by percentage 
         tire_pos = [v.vec(width_s*distance+wheel_width/2,length*(-0.5+front_pos)-(length_fs*tip/2)),
                     v.vec(-width_s*distance-wheel_width/2,length*(-0.5+front_pos)-(length_fs*tip/2)),
                     v.vec(width_s*distance+wheel_width/2,length*(-0.5+rear_pos)+(length_rs*(1-tip/2))),
@@ -115,6 +116,26 @@ class car:
         self.suspension_r = suspension_rear_pr
         self.tire   = tire
         self.tire_pos = tire_pos
+        self.wheelbase = length*(front_pos-rear_pos) -(length_fs*tip/2)-(length_rs*(1-tip/2))
+        self.width = width_s*distance+wheel_width/2
+
+    # math and physics
+
+    def _steering_wheels(self):
+        """returns the individual steering angles of the wheels (left and right)"""
+        if self.steering == 0:
+            return 0,0
+
+        radius = self.wheelbase/tan(radians(self.steering))
+
+        al = degrees(atan(self.wheelbase/(radius+self.width)))
+        ar = degrees(atan(self.wheelbase/(radius-self.width)))
+
+        return al , ar
+
+
+
+    # rendering
 
     def render(self,world:w.world):
 
@@ -137,20 +158,34 @@ class car:
         d.fill_polygon(world.transfrom(self.body),(255, 255, 255),anti=True)
 
         #wheels
+        steering_l , steering_r = self._steering_wheels()
 
         for i in self.tire_pos:
             points  = []
             for j in self.tire:
-                if i.y < 0 :    # rear wheels
+                if   i.y > 0 and i.x <= 0:      # front_left
+                    points.append(world.transfrom(j.ret_rot(steering_l).ret_add(i)))
+                elif i.y > 0 and i.x >= 0:      # front_right
+                    points.append(world.transfrom(j.ret_rot(steering_r).ret_add(i)))
+                else:                           # rear wheels
                     points.append(world.transfrom(j.ret_add(i)))
-                else:           # front wheels
-                    points.append(world.transfrom(j.ret_rot(self.steering).ret_add(i)))
             d.fill_polygon(points,(25,25,25),anti=True)
 
 
     
-    def render_debug(self):
-        d.fill_circle(self.cog)
+    def render_debug(self,world):
+        #center of gravity
+        #d.fill_circle(self.cog)
+
+        #steering
+        sl , sr = self._steering_wheels()
+        r =  world.transfrom(self.tire_pos[0].ret_add(v.vec(1,0).ret_rot(sr).ret_skalmul(1000)))
+        d.line(world.transfrom(self.tire_pos[0]),r,2,(200,200,200))
+
+        l =  world.transfrom(self.tire_pos[1].ret_add(v.vec(1,0).ret_rot(sl).ret_skalmul(1000)))
+        d.line(world.transfrom(self.tire_pos[1]),l,2,(200,200,200))
+
+        d.line(world.transfrom(self.tire_pos[3]),world.transfrom(v.vec(1000,self.tire_pos[3].y)),2,(180,180,180))
 
 
     def move(self,dist):

@@ -14,14 +14,12 @@ def main():
     space = w.world()
     space.set_zoom(50)
     
-    test = d.load_image("Blender/transparency_test.png")
-    d.image_transform(test)
+    if not d.controller_init(): raise("Kein Controller verbunden : - (")
 
     dt = 0.01
 
     while True:
         d.clear((50, 64, 37))
-        d.render_image(test,v.vec())
         if d.key("q"):
             space.zoom(10*dt)
         if d.key("e"):
@@ -31,13 +29,15 @@ def main():
         if d.key("s"):
             space.move(v.vec(0,-10*dt))
         
+        sportcar.steering = d.controller_axis(2)*45
 
         sportcar.render(space)
+        sportcar.render_debug(space)
 
         
 
         dt = d.delta_time()/1000
-        print(1000/(dt*1000))
+        print(1000/(dt*1000)) #fps
         
         d.update()
 
