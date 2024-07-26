@@ -1,15 +1,17 @@
-import vec_2d as v
-import draw as d
-import world as w
+import vec2 as v
+import car_generator.world as w
 from math import atan , tan , degrees , radians
+import pygame
 
 class car:
     def __init__(self,length=1) -> None:
         self.length = length
-        self.pos = v.vec()
         self.cog = v.vec()  #center of gravity
+        
+        self.pos = v.vec()
         self.rot = 0
         self.steering = 0
+        self.throttle = 0
 
 
     def create_geometry(self): #generates the geometry of the car
@@ -121,6 +123,12 @@ class car:
 
     # math and physics
 
+    def steer(self,angle):
+        self.steering = angle
+
+    def move(self,dist):
+        self.pos.add(dist)
+
     def _steering_wheels(self):
         """returns the individual steering angles of the wheels (left and right)"""
         if self.steering == 0:
@@ -134,28 +142,35 @@ class car:
         return al , ar
 
 
-
     # rendering
 
-    def render(self,world:w.world):
+    def render(self):
 
         self.facing = v.vec(0,1).ret_rot(self.rot) # can very likely be removed later
-        wl = world.get_width(0.04)  # line thickness
+        wl = round(w.get_width(0.04))  # line thickness
 
+        
         #suspension
         for i in range(len(self.suspension_r)):
             for j in range(i+1,len(self.suspension_r)):
+
                 #Rear supspension
-                d.line(world.transfrom(self.suspension_r[i]),world.transfrom(self.suspension_r[j]),wl,(32, 32, 32))
-                d.line(world.transfrom(self.suspension_r[i].ret_mirror(v.vec(),self.facing)),
-                       world.transfrom(self.suspension_r[j].ret_mirror(v.vec(),self.facing)),wl,(32, 32, 32))
+                pygame.draw.line(pygame.display.get_surface(),(32, 32, 32),
+                                 w.transfrom(self.suspension_r[i]).pyg_center().to_list(),
+                                 w.transfrom(self.suspension_r[j]).pyg_center().to_list(),wl)
+                pygame.draw.line(pygame.display.get_surface(),(32, 32, 32),
+                                 w.transfrom(self.suspension_r[i].ret_mirror(v.vec(),self.facing)).pyg_center().to_list(),
+                                 w.transfrom(self.suspension_r[j].ret_mirror(v.vec(),self.facing)).pyg_center().to_list(),wl)
                 #front suspension
-                d.line(world.transfrom(self.suspension_f[i]),world.transfrom(self.suspension_f[j]),wl,(32, 32, 32))
-                d.line(world.transfrom(self.suspension_f[i].ret_mirror(v.vec(),self.facing)),
-                       world.transfrom(self.suspension_f[j].ret_mirror(v.vec(),self.facing)),wl,(32, 32, 32))
+                pygame.draw.line(pygame.display.get_surface(),(32, 32, 32),
+                                 w.transfrom(self.suspension_f[i]).pyg_center().to_list(),
+                                 w.transfrom(self.suspension_f[j]).pyg_center().to_list(),wl)
+                pygame.draw.line(pygame.display.get_surface(),(32, 32, 32),
+                                 w.transfrom(self.suspension_f[i].ret_mirror(v.vec(),self.facing)).pyg_center().to_list(),
+                                 w.transfrom(self.suspension_f[j].ret_mirror(v.vec(),self.facing)).pyg_center().to_list(),wl)
                 
         #body
-        d.fill_polygon(world.transfrom(self.body),(255, 255, 255),anti=True)
+        pygame.draw.polygon(pygame.display.get_surface(),(255, 255, 255),[i.pyg_center().to_list() for i in w.transfrom(self.body)])
 
         #wheels
         steering_l , steering_r = self._steering_wheels()
@@ -164,29 +179,37 @@ class car:
             points  = []
             for j in self.tire:
                 if   i.y > 0 and i.x <= 0:      # front_left
-                    points.append(world.transfrom(j.ret_rot(steering_l).ret_add(i)))
+                    points.append(w.transfrom(j.ret_rot(steering_l).ret_add(i)))
                 elif i.y > 0 and i.x >= 0:      # front_right
-                    points.append(world.transfrom(j.ret_rot(steering_r).ret_add(i)))
+                    points.append(w.transfrom(j.ret_rot(steering_r).ret_add(i)))
                 else:                           # rear wheels
-                    points.append(world.transfrom(j.ret_add(i)))
-            d.fill_polygon(points,(25,25,25),anti=True)
+                    points.append(w.transfrom(j.ret_add(i)))
+            pygame.draw.polygon(pygame.display.get_surface(),(25,25,25),[i.pyg_center().to_list() for i in points])
 
 
-    
-    def render_debug(self,world):
-        #center of gravity
-        #d.fill_circle(self.cog)
+    def render_debug(self,show_cog=False,show_steering=False,shwo_forces=False):
+        if show_cog: # show center of gravity
+            pygame.draw.circle(pygame.display.get_surface(),(0,0,0),self.cog.pyg_center().to_list(),10)
 
-        #steering
-        sl , sr = self._steering_wheels()
-        r =  world.transfrom(self.tire_pos[0].ret_add(v.vec(1,0).ret_rot(sr).ret_skalmul(1000)))
-        d.line(world.transfrom(self.tire_pos[0]),r,2,(200,200,200))
+        if show_steering: # shows the different steering directions (needs definitely to be reworked after implementing rotation)
+            sl , sr = self._steering_wheels() #individual steering angles
 
-        l =  world.transfrom(self.tire_pos[1].ret_add(v.vec(1,0).ret_rot(sl).ret_skalmul(1000)))
-        d.line(world.transfrom(self.tire_pos[1]),l,2,(200,200,200))
+            r =  w.transfrom(self.tire_pos[0].ret_add(v.vec(1,0).ret_rot(sr).ret_skalmul(1000))) # right endpoint
+            l =  w.transfrom(self.tire_pos[1].ret_add(v.vec(1,0).ret_rot(sl).ret_skalmul(1000))) # left endpoint
 
-        d.line(world.transfrom(self.tire_pos[3]),world.transfrom(v.vec(1000,self.tire_pos[3].y)),2,(180,180,180))
+            pygame.draw.line(pygame.display.get_surface(),(200,200,200),
+                             w.transfrom(self.tire_pos[0]).pyg_center().to_list(),
+                             r.pyg_center().to_list(),2)
+
+            pygame.draw.line(pygame.display.get_surface(),(200,200,200),
+                             w.transfrom(self.tire_pos[1]).pyg_center().to_list(),
+                             l.pyg_center().to_list(),2)
+
+            pygame.draw.line(pygame.display.get_surface(),(180,180,180),
+                             w.transfrom(self.tire_pos[3]).pyg_center().to_list(),
+                             w.transfrom(v.vec(1000,self.tire_pos[3].y)).pyg_center().to_list(),2)
+
+        if shwo_forces:
+            pass
 
 
-    def move(self,dist):
-        self.pos.add(dist)

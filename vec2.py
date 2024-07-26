@@ -1,4 +1,5 @@
 import math
+from pygame import display
 
 #=== 2d vector class for the mathematical functions ===
 
@@ -11,15 +12,18 @@ class vec:
         return vec(self.x,self.y)
     def to_list(self):
         """converts vector x and y to list"""
-        return [self.x,self.y]
+        return (self.x,self.y)
+    def from_list(self,tup):
+        self.x = tup[0]
+        self.y = tup[1]
 
     def length(self):
-        """returns length of a vector"""
-        if self.x == 0 and self.y == 0 :
-            print("! Vector length is zero -> switching to close value !")
-            new_x = 0.001 if self.x == 0 else self.x
-            new_y = 0 if self.y == 0 else self.y
-            return math.sqrt(new_x**2 + new_y**2)
+        """returns length of a vector (never 0 ?)"""
+        #if self.x == 0 and self.y == 0 :
+        #    #print("! Vector length is zero -> switching to close value !")
+        #    new_x = 0.001 if self.x == 0 else self.x
+        #    new_y = 0 if self.y == 0 else self.y
+        #    return math.sqrt(new_x**2 + new_y**2)
         return math.sqrt(self.x**2 + self.y**2)
 
     def ret_add(self, pvec):
@@ -39,6 +43,10 @@ class vec:
         """subtracts a second vec from this vec"""
         self.x -= pvec.x
         self.y -= pvec.y
+    def distance(self,pvec):
+        """returns the distance (float) between this vector and the other"""
+        con = self.ret_sub(pvec)
+        return con.length()
 
     def ret_rot(self,angle = 90):
         """returns this vec rotated by a given angle"""
@@ -141,5 +149,13 @@ class vec:
 
         return mir
 
+    def pyg_center(self,):
+        """translates the vector to the scuffed pygame coordinate system (from my to their coordiante system)"""
+        return vec(self.x+(display.get_surface().get_width()//2),
+                   -self.y+(display.get_surface().get_height()//2))
+    def pyg_decenter(self,):
+        """'de'centers the vector from the scuffed pygame coordinate system"""
+        return vec(self.x-(display.get_surface().get_width()//2),
+                   -self.y+(display.get_surface().get_height()//2))
     def __str__(self) -> str:
-        return "x : "+ str(self.x) +" <-> y: "+ str(self.y)
+        return "x : "+ str(self.x) +" & y : "+ str(self.y)
