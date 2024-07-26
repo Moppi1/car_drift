@@ -20,13 +20,14 @@ def main():
 
     def ui_cycle():
         nonlocal ux , board
-        board.render(40,v.vec(0,ux.get_element_value("test1")))
+        #board.render(40,v.vec(0,ux.get_element_value("test1")))
         ux.update()
         pygame.draw.circle(pygame.display.get_surface(),(230,230,89,),[1280,540],10)
         
         sportcar.steer(ux.get_element_value("test2"))
         sportcar.render()
         sportcar.render_debug(show_steering=True)
+        print(ux.get_element_value("test_b6"))
 
     ux = g.gui("main")
     ux.element_append(e.slider("test1",v.vec(400,400),v.vec(400,-400),[200,-100]))
@@ -38,7 +39,8 @@ def main():
     ux.element_append(e.button("test_b3",v.vec(-1000,200),400,"bitte lass es funktionieren"))
     ux.element_append(e.button("test_b4",v.vec(-1000,250),400,"performance"))
     ux.element_append(e.button("test_b5",v.vec(-1000,300),400,"power"))
-    ux.element_append(e.button("test_b6",v.vec(-1000,350),400,"energy"))
+    ux.element_append(e.togglebutton("test_b6",v.vec(-1000,350),400,"energy"))
+    
 
     board = b.checkerboard([10,30],(160,160,160))
     sportcar = c.car(6)
@@ -56,7 +58,7 @@ def main():
         #window.blit(image,v.vec().to_list())
         
         ui_cycle()
-        pygame.display.set_caption(str(round(1000/clock.tick())))
+        pygame.display.set_caption(str(round(1000/clock.tick(100))))
 
         
         pos = v.vec().pyg_center()

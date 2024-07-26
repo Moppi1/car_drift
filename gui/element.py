@@ -132,6 +132,7 @@ class button:
         self.width      = width             # for collision purposes
         self.height     = 50                # for collision static
         self.function   = call_function
+        self.value = False
 
         # interaction
 
@@ -176,11 +177,12 @@ class button:
         
         # == does the logic == 
         if self.pressed: 
+            self.value = True
             if self.function != None:
                     self.function()
                     return
-
-            self.value = True if self.pressed else False
+        else: 
+            self.value = False
 
     def render(self):
         global text
@@ -214,7 +216,7 @@ class button:
         self.pos = pos
 
 class togglebutton:
-    def __init__(self,name,pos:v.vec,width:float,text:str=None,call_function=None) -> None:
+    def __init__(self,name,pos:v.vec,width:float,text:str=None) -> None:
         """creates a 'toggle button' which bool value can be toggled by clicking"""
 
         self.pos        = pos
@@ -222,7 +224,7 @@ class togglebutton:
         self.name       = name
         self.width      = width             # for collision purposes
         self.height     = 50                # for collision static
-        self.function   = call_function
+        self.value = False
 
         # interaction
 
@@ -233,8 +235,10 @@ class togglebutton:
         # visuals
 
         self.text_color             = (207, 204, 204)
-        self.marker_hover_color     = (212, 161, 21)
-        self.text_hover_color       = (150,150,150)
+        self.text_selected_color    = (150,150,150)
+        self.outline_color          = (225,225,225)
+        self.outline_hover_color    = (212, 161, 21)
+        self.outline_selected_color = (234,234,23)  
 
     def update(self):
         """updates the button (mouse input). has to be called each frame"""
@@ -252,44 +256,38 @@ class togglebutton:
 
             return False
 
-
-        if check_collision():
+        begin_pressing = False
+        if check_collision(): # touched
             if pygame.mouse.get_pressed()[0]: # clicked
+                if not self.pressed:
+                    begin_pressing = True
                 self.pressed = True
             else:   # hover
                 self.pressed = False
-                if not self.hover:
-                    self.time_hover_begin = pygame.time.get_ticks()
                 self.hover   = True
         else: # not touched
-            self.pressed   = False
-            self.hover      = False
+            self.pressed = self.hover = False
         
         # == does the logic == 
-        if self.pressed: 
-            if self.function != None:
-                    self.function()
-                    return
-
-            self.value = True if self.pressed else False
+        if begin_pressing:
+            self.value = False if self.value else True
 
     def render(self):
         global text
         pos = self.pos.pyg_center()
         
-        if self.hover:
-            time = pygame.time.get_ticks() - self.time_hover_begin
-            animation_value = (time/100)**3
-            if animation_value >= 1 : animation_value = 1
-
-            pygame.draw.rect(pygame.display.get_surface(),self.marker_hover_color,(pos.x,pos.y+46-(40*animation_value),6,40*animation_value),0,4)
-            pygame.display.get_surface().blit(text.render(self.text,True,self.text_hover_color),pos.ret_add(v.vec(10*animation_value,0)).to_list()) #,
-        
-        else:
-            pygame.display.get_surface().blit(text.render(self.text,True,self.text_color),pos.ret_add(v.vec()).to_list())
+        if self.value: # Button is True
+            pygame.draw.rect(pygame.display.get_surface(),self.outline_selected_color,(pos.x,pos.y,self.width,self.height),3,8)
+            pygame.display.get_surface().blit(text.render(self.text,True,self.text_selected_color),pos.ret_add(v.vec(8,-6)).to_list())
+        elif self.hover: # Button is hovered
+            pygame.draw.rect(pygame.display.get_surface(),self.outline_hover_color,(pos.x,pos.y,self.width,self.height),3,8)
+            pygame.display.get_surface().blit(text.render(self.text,True,self.text_color),pos.ret_add(v.vec(8,-6)).to_list())
+        else: # button is default
+            pygame.draw.rect(pygame.display.get_surface(),self.outline_color,(pos.x,pos.y,self.width,self.height),3,8)
+            pygame.display.get_surface().blit(text.render(self.text,True,self.text_color),pos.ret_add(v.vec(8,-6)).to_list())
             
     def change_visuals(self,text_color=None,marker_hover_color=None,text_hover_color=None):
-        """change the values of the visual aspects of the sliders"""
+        """!!not finished change the values of the visual aspects of the sliders"""
 
         self.text_color             = text_color if text_color != None else self.text_color
         self.marker_hover_color     = marker_hover_color if marker_hover_color != None else self.marker_hover_color
